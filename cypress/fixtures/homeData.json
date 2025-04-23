@@ -1,0 +1,31 @@
+{
+    "selectors": {
+        "searchInput": "#search",
+        "searchResultsWrapper": ".product-item",
+        "searchResultName": ".product-item-name",
+        "noResultsMessage": ".message.notice",
+        "categoryNav": "nav.navigation li.level0",
+        "submenuLevel0": "ul.level0.submenu",
+        "submenuLevel1": "ul.level1.submenu",
+        "submenuLevel2": "ul.level2.submenu",
+        "level0Item": "li.level0",
+        "level1Item": "li.level1",
+        "level2Item": "li.level2",
+        "productItemLink": ".product-item-link",
+        "miniCartCounter": ".counter.qty",
+        "miniCartTrigger": ".showcart",
+        "viewCartButton": "a.action.viewcart",
+        "checkoutButton": "#top-cart-btn-checkout"
+    },
+    "urls": {
+        "homepageUrl": "/",
+        "searchResults": "/catalogsearch/result"
+    },
+    "messages": {
+        "noResults": "Your search returned no results."
+    },
+    "searchTerms": {
+        "validProduct": "Jacket",
+        "invalidProduct": "NAN/NANXO"
+    }
+}

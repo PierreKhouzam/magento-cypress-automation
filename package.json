@@ -1,0 +1,23 @@
+{
+    "name": "magento-cypress-automation",
+    "version": "1.0.0",
+    "description": "Cypress automation project for Magento website",
+    "main": "index.js",
+    "scripts": {
+        "test": "cypress run",
+        "report": "cypress run",
+        "merge-reports": "mochawesome-merge cypress/reports/*.json > cypress/reports/merged-report.json",
+        "generate-html-report": "marge cypress/reports/merged-report.json -f report -o cypress/reports/html"
+    },
+    "author": "Pierre Khouzam",
+    "license": "ISC",
+    "devDependencies": {
+        "cypress": "^14.3.1",
+        "cypress-mochawesome-reporter": "^3.8.2",
+        "cypress-real-events": "^1.14.0",
+        "cypress-wait-until": "^3.0.2",
+        "mochawesome": "^7.1.3",
+        "mochawesome-merge": "^5.0.0",
+        "mochawesome-report-generator": "^6.2.0"
+    }
+}

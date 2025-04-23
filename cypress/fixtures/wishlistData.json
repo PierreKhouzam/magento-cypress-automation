@@ -1,0 +1,7 @@
+{
+    "selectors": {
+        "addToCartButton": ".product-item-actions .action.tocart",
+        "addAllToCartButton": "button[data-role='all-tocart'][title='Add All to Cart']",
+        "productItemLink": ".product-item .product-item-link"
+    }
+}

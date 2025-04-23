@@ -1,0 +1,27 @@
+{
+    "selectors": {
+        "productPrice": ".product-info-price .price",
+        "addToCartButton": "#product-addtocart-button",
+        "addToWishlistButton": ".action.towishlist",
+        "sizeOption": "div[option-label=\"${size}\"]",
+        "colorOption": "div[option-label=\"${color}\"]"
+    },
+    "products": {
+        "firstProduct": {
+            "category": "Men",
+            "subcategory": "Tops",
+            "finalCategory": "Tees",
+            "name": "Strike Endurance Tee",
+            "size": "M",
+            "color": "Blue"
+        },
+        "secondProduct": {
+            "category": "Men",
+            "subcategory": "Bottoms",
+            "finalCategory": "Pants",
+            "name": "Cronus Yoga Pant",
+            "size": "32",
+            "color": "Black"
+        }
+    }
+}

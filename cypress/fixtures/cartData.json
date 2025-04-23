@@ -1,0 +1,11 @@
+{
+    "selectors": {
+        "productItemName": ".product-item-name",
+        "individualProductPrices": ".cart .item .subtotal .price",
+        "grandTotalPrice": ".grand > .amount",
+        "proceedToCheckoutButton": "button[data-role=\"proceed-to-checkout\"]"
+    },
+    "urls": {
+        "cartPage": "/checkout/cart"
+    }
+}

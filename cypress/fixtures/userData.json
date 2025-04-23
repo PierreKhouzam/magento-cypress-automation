@@ -1,0 +1,17 @@
+{
+  "userDetails": {
+    "firstName": "Jey",
+    "lastName": "Murray",
+    "email": "jey.murray@example.com",
+    "password": "C0mplexP@$$w0rd"
+  },
+  "shippingDetails": {
+    "company": "TestCorp",
+    "street": "456 Main Street",
+    "city": "Los Angeles",
+    "region": "California",
+    "postcode": "90001",
+    "phone": "93105557890",
+    "shippingMethod": "flatrate_flatrate"
+  }
+}

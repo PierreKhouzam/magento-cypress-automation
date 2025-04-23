@@ -1,0 +1,17 @@
+{
+    "urls": {
+        "registrationPage": "/customer/account/create"
+    },
+    "selectors": {
+        "firstName": "#firstname",
+        "lastName": "#lastname",
+        "email": "#email_address",
+        "password": "#password",
+        "passwordConfirmation": "#password-confirmation",
+        "submitButton": "button[title='Create an Account']",
+        "successMessage": ".message-success"
+    },
+    "messages": {
+        "registrationSuccess": "Thank you for registering"
+    }
+}

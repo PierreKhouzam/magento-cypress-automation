@@ -1,0 +1,23 @@
+{
+    "selectors": {
+        "companyInput": "input[name=\"company\"]",
+        "streetInput": "input[name=\"street[0]\"]",
+        "cityInput": "input[name=\"city\"]",
+        "regionDropdown": "select[name=\"region_id\"]",
+        "postcodeInput": "input[name=\"postcode\"]",
+        "telephoneInput": "input[name=\"telephone\"]",
+        "shippingMethodsContainer": "#checkout-shipping-method-load",
+        "shippingMethodRadio": "#checkout-shipping-method-load input[type=\"radio\"][value=\"{{value}}\"]",
+        "continueButton": "button[data-role=\"opc-continue\"]",
+        "placeOrderButton": "button.action.primary.checkout",
+        "thankYouHeader": ".page-title-wrapper .page-title .base",
+        "orderNumber": ".checkout-success > :nth-child(1)"
+    },
+    "urls": {
+        "shippingUrl": "/checkout/#shipping",
+        "orderSuccess": "/checkout/onepage/success"
+    },
+    "messages": {
+        "orderPlacedMsg": "Thank you for your purchase"
+    }
+}

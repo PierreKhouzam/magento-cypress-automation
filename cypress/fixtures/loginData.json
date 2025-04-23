@@ -1,0 +1,11 @@
+{
+    "selectors": {
+        "emailInput": "#email",
+        "passwordInput": "#pass",
+        "loginButton": "#send2",
+        "welcomeMessage": "li.greet.welcome .logged-in"
+    },
+    "urls": {
+        "loginPage": "/customer/account/login"
+    }
+}
