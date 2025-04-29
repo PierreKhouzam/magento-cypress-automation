@@ -1,13 +1,12 @@
-// cypress/scripts/config.js
 module.exports = {
-    reports: { dir: '../../cypress/reports' }, // From cypress/scripts to cypress/reports
-    db: { dir: '../../db' }, // From cypress/scripts to project root db
+    reports: { dir: 'cypress/reports' },
+    db: { dir: 'cypress/db' },
+    ml: { maxDepth: 10, minNumSamples: 2 },
     flakiness: {
-        flakyScoreThreshold: 0.3,
-        passRateThreshold: 0.7,
-        transitionRateThreshold: 0.3,
+        flakyScoreThreshold: 0.15,
+        passRateThreshold: 0.85,
+        transitionRateThreshold: 0.2,
         durationVariabilityThreshold: 0.5,
         recentFailRateThreshold: 0.3
-    },
-    ml: { maxDepth: 10, minNumSamples: 5 }
+    }
 };

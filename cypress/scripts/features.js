@@ -1,7 +1,4 @@
-// features.js
-/**
- * Shared feature extraction utilities for flaky test detection.
- */
+const logger = require('./logger');
 
 /**
  * Calculate pass rate from test runs.
@@ -34,7 +31,8 @@ function calculateTransitionRate(runs) {
  */
 function calculateDurationVariability(runs) {
     if (!runs || runs.length < 2) return 0;
-    const durations = runs.map(run => run.duration || 0);
+    const durations = runs.map(run => run.duration || 0).filter(d => d > 0);
+    if (durations.length < 2) return 0;
     const avgDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
     const squaredDiffs = durations.map(d => Math.pow(d - avgDuration, 2));
     const variance = squaredDiffs.reduce((sum, d) => sum + d, 0) / durations.length;
@@ -61,20 +59,48 @@ function calculateRecentFailRate(runs, recentCount = 5) {
  * @returns {Object} Feature object
  */
 function extractFeatures(testData) {
-    return {
-        passRate: calculatePassRate(testData.runs),
-        avgDuration: testData.runs?.length
-            ? testData.runs.reduce((sum, run) => sum + (run.duration || 0), 0) / testData.runs.length
-            : 0,
-        transitionRate: calculateTransitionRate(testData.runs),
-        durationVariability: calculateDurationVariability(testData.runs),
-        recentFailRate: calculateRecentFailRate(testData.runs),
-        timingIssues: testData.patterns?.timingIssues || 0,
-        selectorIssues: testData.patterns?.selectorIssues || 0,
-        networkIssues: testData.patterns?.networkIssues || 0,
-        dataIssues: testData.patterns?.dataIssues || 0,
-        flakyScore: testData.flakyScore || 0
+    const runs = testData.runs || [];
+    let timingIssues = 0;
+    let selectorIssues = 0;
+    let networkIssues = 0;
+    let dataIssues = 0;
+
+    runs.forEach(run => {
+        if (run.error) {
+            const errorMsg = run.error.toLowerCase();
+            if (errorMsg.includes('time') || errorMsg.includes('timeout') || errorMsg.includes('wait')) {
+                timingIssues++;
+            }
+            if (errorMsg.includes('selector') || errorMsg.includes('element') || errorMsg.includes('not found')) {
+                selectorIssues++;
+            }
+            if (errorMsg.includes('network') || errorMsg.includes('connection') || errorMsg.includes('request')) {
+                networkIssues++;
+            }
+            if (errorMsg.includes('data') || errorMsg.includes('invalid') || errorMsg.includes('missing')) {
+                dataIssues++;
+            }
+        }
+    });
+
+    const features = {
+        passRate: calculatePassRate(runs),
+        avgDuration: runs.length ? runs.reduce((sum, run) => sum + (run.duration || 0), 0) / runs.length : 0,
+        transitionRate: calculateTransitionRate(runs),
+        durationVariability: calculateDurationVariability(runs),
+        recentFailRate: calculateRecentFailRate(runs),
+        timingIssues,
+        selectorIssues,
+        networkIssues,
+        dataIssues
     };
+
+    logger.debug('Extracted features for test', {
+        test: runs[0]?.title || testData.title || 'unknown',
+        features
+    });
+
+    return features;
 }
 
 module.exports = {

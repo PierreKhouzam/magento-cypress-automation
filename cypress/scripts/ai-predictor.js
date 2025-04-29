@@ -1,3 +1,4 @@
+// @ts-nocheck
 const fs = require('fs').promises;
 const path = require('path');
 const { loadTestHistory, saveTestHistory } = require('./test-db');
@@ -23,12 +24,19 @@ async function loadHistory() {
 }
 
 function generateTrainingData(history) {
-    return Object.keys(history).map(testName => {
+    const trainingData = Object.keys(history).map(testName => {
         const testData = history[testName];
         const features = extractFeatures(testData);
-        const label = testData.flakyScore > config.flakiness.flakyScoreThreshold ? 1 : 0;
+        const label = testData.flakyScore > (config.flakiness?.flakyScoreThreshold || 0.15) ? 1 : 0;
+        if (!features || Object.values(features).some(val => typeof val !== 'number' || isNaN(val))) {
+            logger.error('Invalid features for training', { testName, features });
+            return null;
+        }
         return { features, label, testName };
-    });
+    }).filter(data => data !== null);
+
+    logger.debug('Generated training data', { testCount: trainingData.length });
+    return trainingData;
 }
 
 async function trainModel(history) {
@@ -36,30 +44,58 @@ async function trainModel(history) {
     const trainingData = generateTrainingData(history);
 
     if (trainingData.length === 0) {
-        logger.warn('No training data available. Model training skipped.');
-        return new FlakyTestPredictor();
+        logger.warn('No valid training data available. Model training skipped.');
+        return null;
     }
 
     const predictor = new FlakyTestPredictor();
-    if (await predictor.loadModel()) {
-        logger.info('Using cached ML model');
-    } else {
-        predictor.train(trainingData);
-        await predictor.saveModel();
+    try {
+        if (await predictor.loadModel()) {
+            logger.info('Using cached ML model');
+        } else {
+            const success = predictor.train(trainingData);
+            if (success) {
+                await predictor.saveModel();
+            } else {
+                logger.warn('Model training failed, proceeding with rule-based prediction');
+                return null;
+            }
+        }
+        const importance = predictor.getFeatureImportance();
+        if (importance) {
+            logger.info('Feature Importance:', Object.entries(importance)
+                .sort((a, b) => b[1] - a[1])
+                .map(([feature, score]) => ({ feature, score: (score * 100).toFixed(2) + '%' })));
+        }
+        return predictor;
+    } catch (error) {
+        logger.error('Failed to train or load model:', { error: error.message });
+        return null;
     }
-
-    const importance = predictor.getFeatureImportance();
-    if (importance) {
-        logger.info('Feature Importance:', Object.entries(importance)
-            .sort((a, b) => b[1] - a[1])
-            .map(([feature, score]) => ({ feature, score: (score * 100).toFixed(2) + '%' })));
-    }
-
-    return predictor;
 }
 
 function predictFlakiness(testData, predictor) {
     const features = extractFeatures(testData);
+    if (!features || Object.values(features).some(val => typeof val !== 'number' || isNaN(val))) {
+        logger.error('Invalid features for prediction', { testTitle: testData.runs[0]?.title || 'unknown', features });
+        return {
+            prediction: 'Unknown',
+            confidence: '0%',
+            features,
+            reason: 'Invalid feature data'
+        };
+    }
+
+    if (!predictor) {
+        const prediction = FlakyTestPredictor.prototype._ruleBasedPrediction.call({ logger }, features);
+        return {
+            prediction: prediction === 1 ? 'Flaky' : 'Stable',
+            confidence: '50%',
+            features,
+            reason: 'No trained model available, used rule-based prediction'
+        };
+    }
+
     const predictionResult = predictor.predict(features);
     const confidence = predictor.getPredictionConfidence(features);
 
@@ -91,14 +127,14 @@ async function analyzeFlakiness() {
                 continue;
             }
 
-            const { prediction, confidence, features } = predictFlakiness(testData, predictor);
+            const { prediction, confidence, features, reason } = predictFlakiness(testData, predictor);
             results[testName] = {
                 prediction,
                 confidence,
                 flakyScore: testData.flakyScore.toFixed(2),
                 passRate: ((features.passRate) * 100).toFixed(1) + '%',
                 runCount: testData.runs.length,
-                reason: generateReason(prediction, features)
+                reason: reason || generateReason(prediction, features)
             };
         }
 
@@ -116,20 +152,29 @@ function generateReason(prediction, features) {
     }
 
     const reasons = [];
-    const thresholds = config.flakiness;
+    const thresholds = config.flakiness || {};
 
-    if (features.flakyScore > 0.5) reasons.push(`high flaky score (${features.flakyScore.toFixed(2)})`);
-    if (features.transitionRate > thresholds.transitionRateThreshold) reasons.push(`frequent state transitions (${(features.transitionRate * 100).toFixed(1)}%)`);
-    if (features.passRate < thresholds.passRateThreshold && features.passRate > 0.2) reasons.push(`inconsistent pass rate (${(features.passRate * 100).toFixed(1)}%)`);
-    if (features.recentFailRate > thresholds.recentFailRateThreshold) reasons.push(`recent failures detected (${(features.recentFailRate * 100).toFixed(1)}%)`);
-    if (features.durationVariability > thresholds.durationVariabilityThreshold) reasons.push('high execution time variability');
+    if (features.passRate <= (thresholds.passRateThreshold || 0.85) && features.passRate > 0.2) {
+        reasons.push(`inconsistent pass rate (${(features.passRate * 100).toFixed(1)}%)`);
+    }
+    if (features.transitionRate > (thresholds.transitionRateThreshold || 0.2)) {
+        reasons.push(`frequent state transitions (${(features.transitionRate * 100).toFixed(1)}%)`);
+    }
+    if (features.recentFailRate > (thresholds.recentFailRateThreshold || 0.3)) {
+        reasons.push(`recent failures detected (${(features.recentFailRate * 100).toFixed(1)}%)`);
+    }
+    if (features.durationVariability > (thresholds.durationVariabilityThreshold || 0.5)) {
+        reasons.push('high execution time variability');
+    }
 
     const issues = [];
     if (features.timingIssues > 0) issues.push('timing');
     if (features.selectorIssues > 0) issues.push('selector');
     if (features.networkIssues > 0) issues.push('network');
     if (features.dataIssues > 0) issues.push('data');
-    if (issues.length > 0) reasons.push(`detected ${issues.join('/')} issues`);
+    if (issues.length > 0) {
+        reasons.push(`detected ${issues.join('/')}`);
+    }
 
     return reasons.length > 0 ? `Flagged due to ${reasons.join(', ')}` : 'Pattern matches characteristics of flaky tests';
 }
@@ -159,14 +204,15 @@ async function displayPredictions() {
     const flakyTests = Object.values(predictions).filter(p => p.prediction === 'Flaky');
     console.log(`Found ${flakyTests.length} potentially flaky tests (${(flakyTests.length / testCount * 100).toFixed(1)}% of test suite)`);
 
-    const sortedTests = Object.entries(predictions)
-        .sort((a, b) => {
-            if (a[1].prediction !== b[1].prediction) return a[1].prediction === 'Flaky' ? -1 : 1;
-            return parseFloat(b[1].confidence) - parseFloat(a[1].confidence);
-        });
-
     console.log('\n=== PREDICTED FLAKY TESTS ===');
     let flakyCount = 0;
+    const sortedTests = Object.entries(predictions).sort((a, b) => {
+        const aIsFlaky = a[1].prediction === 'Flaky';
+        const bIsFlaky = b[1].prediction === 'Flaky';
+        if (aIsFlaky !== bIsFlaky) return aIsFlaky ? -1 : 1;
+        return parseFloat(b[1].confidence) - parseFloat(a[1].confidence);
+    });
+
     sortedTests.forEach(([testName, data]) => {
         if (data.prediction === 'Flaky') {
             flakyCount++;
@@ -187,12 +233,14 @@ async function updateTestHistoryWithRecommendations() {
         const predictions = await analyzeFlakiness();
 
         for (const [testName, predictionData] of Object.entries(predictions)) {
-            if (!history[testName] || predictionData.prediction !== 'Flaky') continue;
-
+            if (!history[testName]) continue;
             const testData = history[testName];
             const features = extractFeatures(testData);
-            const issueType = determineIssueType(features);
-            history[testName].aiRecommendations = generateRecommendations(features, issueType);
+            const hasIssues = features.timingIssues > 0 || features.selectorIssues > 0 || features.networkIssues > 0 || features.dataIssues > 0;
+            if (predictionData.prediction === 'Flaky' || hasIssues) {
+                const issueType = determineIssueType(features);
+                history[testName].aiRecommendations = generateRecommendations(features, issueType);
+            }
         }
 
         await saveTestHistory(history);

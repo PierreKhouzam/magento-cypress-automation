@@ -14,8 +14,9 @@
     "author": "Pierre Khouzam",
     "license": "ISC",
     "dependencies": {
-        "winston": "^3.8.2",
-        "ml-cart": "^2.1.1"
+        "decision-tree": "^0.3.7",
+        "ml-cart": "^2.1.1",
+        "winston": "^3.8.2"
     },
     "devDependencies": {
         "cypress": "^14.3.1",

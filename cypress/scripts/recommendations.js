@@ -1,40 +1,43 @@
-// recommendations.js
-const config = require('./config');
+const logger = require('./logger');
 
-/**
- * Generate recommendations for a flaky test based on its features.
- * @param {Object} features - Test features
- * @param {string} issueType - Primary issue type
- * @returns {Array<string>} List of recommendations
- */
 function generateRecommendations(features, issueType) {
     const recommendations = [];
-    const thresholds = config.flakiness;
 
-    if (features.timingIssues > 0) {
-        recommendations.push('Add explicit waits or retry logic for timing-sensitive operations');
+    if (issueType === 'timing' || features.timingIssues > 0) {
+        recommendations.push('Increase timeout for async operations');
+        recommendations.push('Add explicit waits for dynamic elements');
+        recommendations.push('Verify server response times');
     }
-    if (features.selectorIssues > 0) {
-        recommendations.push('Improve selector stability by using data attributes instead of class names');
+    if (issueType === 'selector' || features.selectorIssues > 0) {
+        recommendations.push('Review and update CSS selectors for stability');
+        recommendations.push('Use data-test attributes for reliable element targeting');
+        recommendations.push('Check for dynamic IDs or classes');
     }
-    if (features.networkIssues > 0) {
-        recommendations.push('Add network request mocking or stubbing for external dependencies');
+    if (issueType === 'network' || features.networkIssues > 0) {
+        recommendations.push('Stub network requests for consistent testing');
+        recommendations.push('Check for intermittent network failures');
+        recommendations.push('Increase retry attempts for network calls');
     }
-    if (features.dataIssues > 0) {
-        recommendations.push('Ensure test data is consistent or use data seeding/resetting');
-    }
-    if (features.durationVariability > thresholds.durationVariabilityThreshold) {
-        recommendations.push('Investigate performance variability contributing to flakiness');
-    }
-    if (features.transitionRate > thresholds.transitionRateThreshold) {
-        recommendations.push('Review test logic for race conditions or non-deterministic behavior');
-    }
-
-    // Fallback recommendation
-    if (recommendations.length === 0) {
-        recommendations.push(`Implement a retry mechanism for ${issueType} issues`);
+    if (issueType === 'data' || features.dataIssues > 0) {
+        recommendations.push('Validate test data setup and teardown');
+        recommendations.push('Ensure consistent test data across runs');
+        recommendations.push('Check for data dependencies in tests');
     }
 
+    if (features.passRate < 0.85) {
+        recommendations.push('Investigate inconsistent test failures');
+    }
+    if (features.transitionRate > 0.2) {
+        recommendations.push('Stabilize test environment to reduce state changes');
+    }
+    if (features.durationVariability > 0.5) {
+        recommendations.push('Optimize test execution for consistent durations');
+    }
+    if (features.recentFailRate > 0.3) {
+        recommendations.push('Prioritize debugging recent test failures');
+    }
+
+    logger.debug('Generated recommendations', { issueType, features, recommendations });
     return recommendations;
 }
 

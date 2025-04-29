@@ -1,10 +1,11 @@
-// flaky-cli.js
 const readline = require('readline');
 const path = require('path');
 const { execSync } = require('child_process');
 const { loadTestHistory } = require('./test-db');
 const logger = require('./logger');
 const { generateRecommendations } = require('./recommendations');
+const { detectFlakyTests } = require('./flaky-detector');
+const { analyzeFlakiness } = require('./ai-predictor');
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -72,9 +73,9 @@ function showMainMenu() {
 async function analyzeTests() {
     console.log('\nAnalyzing test reports for flakiness...');
     try {
-        execSync('node ' + path.join(__dirname, 'flaky-detector.js'), { stdio: 'inherit' });
+        await detectFlakyTests();
         console.log('\nRunning AI-powered flakiness prediction...');
-        execSync('node ' + path.join(__dirname, 'ai-predictor.js'), { stdio: 'inherit' });
+        await analyzeFlakiness();
     } catch (error) {
         logger.error('Error analyzing tests:', { error: error.message, stack: error.stack });
     }
@@ -126,7 +127,7 @@ async function viewTestHistory() {
         console.log(`- Data Issues: ${testData.patterns.dataIssues}`);
 
         console.log('\nAI Recommendations:');
-        if (testData.aiRecommendations) {
+        if (testData.aiRecommendations && testData.aiRecommendations.length > 0) {
             testData.aiRecommendations.forEach((rec, idx) => {
                 console.log(`${idx + 1}. ${rec}`);
             });
@@ -205,13 +206,13 @@ function simulateFlaky() {
 /**
  * Run tests and analyze results.
  */
-function runTests() {
+async function runTests() {
     console.log('\nRunning tests...');
 
     try {
         execSync('npx cypress run --headless', { stdio: 'inherit' });
         console.log('\nAnalyzing the results...');
-        execSync('node ' + path.join(__dirname, 'flaky-detector.js'), { stdio: 'inherit' });
+        await detectFlakyTests();
     } catch (error) {
         logger.error('Error running tests:', { error: error.message, stack: error.stack });
     }

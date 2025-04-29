@@ -1,0 +1,213 @@
+{
+  "Test Case A: Registration flow with login validation Should register a new user and validate login": {
+    "runs": [
+      {
+        "state": "passed",
+        "duration": 11677,
+        "timestamp": "2025-04-25T10:18:39.414Z"
+      },
+      {
+        "state": "passed",
+        "duration": 14429,
+        "timestamp": "2025-04-25T10:23:47.704Z"
+      },
+      {
+        "state": "passed",
+        "duration": 13103,
+        "timestamp": "2025-04-25T10:24:50.445Z"
+      },
+      {
+        "state": "passed",
+        "duration": 14289,
+        "timestamp": "2025-04-25T11:15:20.259Z"
+      },
+      {
+        "state": "passed",
+        "duration": 13637,
+        "timestamp": "2025-04-25T11:16:04.480Z"
+      },
+      {
+        "state": "passed",
+        "duration": 13323,
+        "timestamp": "2025-04-29T12:23:42.801Z"
+      },
+      {
+        "state": "passed",
+        "duration": 11403,
+        "timestamp": "2025-04-29T12:36:26.258Z"
+      },
+      {
+        "state": "passed",
+        "duration": 10786,
+        "timestamp": "2025-04-29T12:47:52.678Z"
+      },
+      {
+        "state": "passed",
+        "duration": 11060,
+        "timestamp": "2025-04-29T12:59:55.447Z"
+      },
+      {
+        "state": "passed",
+        "duration": 11117,
+        "timestamp": "2025-04-29T13:05:59.095Z"
+      },
+      {
+        "state": "passed",
+        "duration": 13623,
+        "timestamp": "2025-04-29T13:21:44.861Z"
+      },
+      {
+        "state": "passed",
+        "duration": 11321,
+        "timestamp": "2025-04-29T13:48:09.872Z"
+      }
+    ],
+    "flakyScore": 0.02105027811772529,
+    "patterns": {
+      "timingIssues": 0,
+      "selectorIssues": 0,
+      "networkIssues": 0,
+      "dataIssues": 0
+    },
+    "aiRecommendations": []
+  },
+  "Test Case A: Registration flow with login validation Should allow user to log in with registered credentials": {
+    "runs": [
+      {
+        "state": "passed",
+        "duration": 5946,
+        "timestamp": "2025-04-25T10:18:39.414Z"
+      },
+      {
+        "state": "passed",
+        "duration": 5646,
+        "timestamp": "2025-04-25T10:23:47.704Z"
+      },
+      {
+        "state": "passed",
+        "duration": 5715,
+        "timestamp": "2025-04-25T10:24:50.445Z"
+      }
+    ],
+    "flakyScore": 0.004447520777950744,
+    "patterns": {
+      "timingIssues": 0,
+      "selectorIssues": 0,
+      "networkIssues": 0,
+      "dataIssues": 0
+    },
+    "aiRecommendations": []
+  },
+  "Test Case B: Place order with multiple products and validate price Should register and add multiple products to cart then verify total price": {
+    "runs": [
+      {
+        "state": "passed",
+        "duration": 54728,
+        "timestamp": "2025-04-29T12:23:42.801Z"
+      },
+      {
+        "state": "passed",
+        "duration": 46302,
+        "timestamp": "2025-04-29T12:36:26.258Z"
+      },
+      {
+        "state": "passed",
+        "duration": 41741,
+        "timestamp": "2025-04-29T13:05:59.095Z"
+      },
+      {
+        "state": "passed",
+        "duration": 46043,
+        "timestamp": "2025-04-29T13:21:44.861Z"
+      },
+      {
+        "state": "failed",
+        "duration": 35941,
+        "error": "Error: Mini cart did not update in time",
+        "timestamp": "2025-04-29T13:48:09.872Z"
+      }
+    ],
+    "flakyScore": 0.2024338709920777,
+    "patterns": {
+      "timingIssues": 1,
+      "selectorIssues": 0,
+      "networkIssues": 0,
+      "dataIssues": 0
+    },
+    "aiRecommendations": []
+  },
+  "Test Case C: Wishlist and Checkout Should add products to wishlist and checkout from wishlist": {
+    "runs": [
+      {
+        "state": "passed",
+        "duration": 57890,
+        "timestamp": "2025-04-29T12:23:42.801Z"
+      },
+      {
+        "state": "passed",
+        "duration": 55105,
+        "timestamp": "2025-04-29T12:36:26.258Z"
+      },
+      {
+        "state": "passed",
+        "duration": 49483,
+        "timestamp": "2025-04-29T13:05:59.095Z"
+      },
+      {
+        "state": "passed",
+        "duration": 51219,
+        "timestamp": "2025-04-29T13:21:44.861Z"
+      },
+      {
+        "state": "passed",
+        "duration": 73292,
+        "timestamp": "2025-04-29T13:48:09.872Z"
+      }
+    ],
+    "flakyScore": 0.029523276695492342,
+    "patterns": {
+      "timingIssues": 0,
+      "selectorIssues": 0,
+      "networkIssues": 0,
+      "dataIssues": 0
+    },
+    "aiRecommendations": []
+  },
+  "Test Case D: Search and Validate Results Should search for a valid product and validate results, then search invalid and validate empty results": {
+    "runs": [
+      {
+        "state": "passed",
+        "duration": 10218,
+        "timestamp": "2025-04-29T12:23:42.801Z"
+      },
+      {
+        "state": "passed",
+        "duration": 24185,
+        "timestamp": "2025-04-29T12:36:26.258Z"
+      },
+      {
+        "state": "passed",
+        "duration": 10497,
+        "timestamp": "2025-04-29T13:05:59.095Z"
+      },
+      {
+        "state": "passed",
+        "duration": 11900,
+        "timestamp": "2025-04-29T13:21:44.861Z"
+      },
+      {
+        "state": "passed",
+        "duration": 10992,
+        "timestamp": "2025-04-29T13:48:09.872Z"
+      }
+    ],
+    "flakyScore": 0.07882938501831213,
+    "patterns": {
+      "timingIssues": 0,
+      "selectorIssues": 0,
+      "networkIssues": 0,
+      "dataIssues": 0
+    },
+    "aiRecommendations": []
+  }
+}

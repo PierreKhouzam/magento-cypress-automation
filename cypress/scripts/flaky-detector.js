@@ -6,66 +6,110 @@ const { extractFeatures } = require('./features');
 const { saveTestHistory } = require('./test-db');
 const { generateHtmlReport } = require('./utils');
 
-async function extractTestResults(jsonReport) {
+async function extractTestResults(jsonReport, fileName, fileMtime) {
     try {
+        logger.info(`Attempting to parse JSON from ${fileName}`);
         const reportData = typeof jsonReport === 'string' ? JSON.parse(jsonReport) : jsonReport;
         const results = [];
 
+        logger.info(`Extracting test results from ${fileName}`);
         if (reportData.results && Array.isArray(reportData.results)) {
-            logger.info('Processing results array', { resultCount: reportData.results.length });
+            logger.info(`Processing results array in ${fileName}`, { resultCount: reportData.results.length });
             reportData.results.forEach((suite, suiteIndex) => {
+                logger.debug(`Suite ${suiteIndex} structure in ${fileName}`, {
+                    hasTests: !!suite.tests?.length,
+                    hasSuites: !!suite.suites?.length,
+                    file: suite.file || 'unknown'
+                });
+
+                if (suite.tests && Array.isArray(suite.tests) && suite.tests.length > 0) {
+                    logger.info(`Processing direct tests in result ${suiteIndex} in ${fileName}`, { testCount: suite.tests.length });
+                    suite.tests.forEach((test) => {
+                        let screenshot = null;
+                        if (test.context) {
+                            try {
+                                const context = JSON.parse(test.context);
+                                if (Array.isArray(context) && context[0]?.value?.startsWith('data:image')) {
+                                    screenshot = context[0].value;
+                                }
+                            } catch (err) {
+                                logger.warn(`Failed to parse test context in ${fileName}`, { test: test.fullTitle || 'unknown', error: err.message });
+                            }
+                        }
+                        results.push({
+                            title: test.fullTitle || 'unknown',
+                            state: test.state || 'unknown',
+                            duration: test.duration || 0,
+                            err: test.err || null,
+                            screenshot: screenshot,
+                        });
+                    });
+                } else {
+                    logger.info(`No direct tests in result ${suiteIndex} in ${fileName}`);
+                }
+
                 if (suite.suites && Array.isArray(suite.suites)) {
-                    logger.info(`Processing suite ${suiteIndex}`, { suiteCount: suite.suites.length });
+                    logger.info(`Processing suites in result ${suiteIndex} in ${fileName}`, { suiteCount: suite.suites.length });
                     suite.suites.forEach((innerSuite, innerSuiteIndex) => {
-                        if (innerSuite.tests && Array.isArray(innerSuite.tests)) {
-                            logger.info(`Processing tests in suite ${suiteIndex}.${innerSuiteIndex}`, { testCount: innerSuite.tests.length });
+                        if (innerSuite.tests && Array.isArray(innerSuite.tests) && innerSuite.tests.length > 0) {
+                            logger.info(`Processing tests in suite ${suiteIndex}.${innerSuiteIndex} in ${fileName}`, { testCount: innerSuite.tests.length });
                             innerSuite.tests.forEach((test) => {
                                 let screenshot = null;
                                 if (test.context) {
                                     try {
                                         const context = JSON.parse(test.context);
                                         if (Array.isArray(context) && context[0]?.value?.startsWith('data:image')) {
-                                            screenshot = context[0].value; // Store base64 data
+                                            screenshot = context[0].value;
                                         }
                                     } catch (err) {
-                                        logger.warn('Failed to parse test context', { test: test.fullTitle, error: err.message });
+                                        logger.warn(`Failed to parse test context in ${fileName}`, { test: test.fullTitle || 'unknown', error: err.message });
                                     }
                                 }
                                 results.push({
-                                    title: test.fullTitle,
-                                    state: test.state,
+                                    title: test.fullTitle || 'unknown',
+                                    state: test.state || 'unknown',
                                     duration: test.duration || 0,
                                     err: test.err || null,
                                     screenshot: screenshot,
                                 });
                             });
                         } else {
-                            logger.warn(`No tests found in suite ${suiteIndex}.${innerSuiteIndex}`);
+                            logger.warn(`No tests found in suite ${suiteIndex}.${innerSuiteIndex} in ${fileName}`);
                         }
                     });
                 } else {
-                    logger.warn(`No suites found in result ${suiteIndex}`);
+                    logger.info(`No suites found in result ${suiteIndex} in ${fileName}`);
                 }
             });
         } else {
-            logger.error('Invalid report structure: missing results array');
+            logger.error(`Invalid report structure in ${fileName}: missing or invalid results array`, { reportDataKeys: Object.keys(reportData) });
         }
-        logger.info('Extracted test results', { testCount: results.length });
+        logger.info(`Completed extracting test results from ${fileName}`, { testCount: results.length });
         return results;
     } catch (error) {
-        logger.error('Error parsing JSON report:', { error: error.message });
+        logger.error(`Error parsing JSON report ${fileName}:`, { error: error.message });
         return [];
     }
 }
 
 async function detectFlakyTests() {
     logger.info('Starting flaky test detection...');
-    const reportDir = path.join(__dirname, config.reports.dir);
+    const reportDir = path.resolve(config.reports.dir);
     let testResults = [];
+    const titleCounts = new Map();
 
     try {
+        logger.info(`Verifying report directory: ${reportDir}`);
+        await fs.access(reportDir).catch((err) => {
+            logger.error(`Report directory does not exist or is inaccessible: ${reportDir}`, { error: err.message });
+            throw err;
+        });
         logger.info(`Scanning report directory: ${reportDir}`);
-        const files = await fs.readdir(reportDir);
+        const files = await fs.readdir(reportDir).catch((err) => {
+            logger.error(`Failed to read report directory ${reportDir}:`, { error: err.message });
+            return [];
+        });
+        logger.info(`Found files in directory: ${files.join(', ')}`);
         const jsonFiles = files.filter((file) => file.match(/^index(_\d{3})?\.json$/));
 
         if (jsonFiles.length === 0) {
@@ -73,22 +117,38 @@ async function detectFlakyTests() {
             return;
         }
 
+        logger.info(`Found JSON files: ${jsonFiles.join(', ')}`);
         for (const file of jsonFiles) {
             const filePath = path.join(reportDir, file);
             logger.info(`Processing report: ${filePath}`);
             try {
+                logger.info(`Reading file: ${filePath}`);
                 const jsonData = await fs.readFile(filePath, 'utf8');
-                const results = await extractTestResults(jsonData);
-                testResults.push(...results);
+                const stats = await fs.stat(filePath);
+                const fileMtime = stats.mtime?.toISOString() || new Date().toISOString();
+                logger.debug(`File mtime for ${file}: ${fileMtime}`);
+                const results = await extractTestResults(jsonData, file, fileMtime);
+                logger.info(`Extracted ${results.length} test results from ${file}`);
+                results.forEach((result) => {
+                    titleCounts.set(result.title, (titleCounts.get(result.title) || 0) + 1);
+                    testResults.push({ ...result, fileMtime });
+                });
             } catch (err) {
                 logger.error(`Error processing file ${file}:`, { error: err.message });
             }
         }
 
         if (testResults.length === 0) {
-            logger.info('No test results extracted from report files.');
+            logger.warn('No test results extracted from report files.');
             return;
         }
+
+        // Log title counts to detect duplicates
+        titleCounts.forEach((count, title) => {
+            if (count > 1) {
+                logger.info(`Test title "${title}" appears ${count} times across JSON files`);
+            }
+        });
 
         const testHistory = {};
         testResults.forEach((result) => {
@@ -110,7 +170,7 @@ async function detectFlakyTests() {
                 duration: result.duration,
                 error: result.err ? result.err.message : null,
                 stack: result.err ? result.err.stack : null,
-                timestamp: new Date().toISOString(),
+                timestamp: result.fileMtime,
             });
         });
 
@@ -133,7 +193,7 @@ async function detectFlakyTests() {
             uniqueTests: Object.keys(testHistory).length,
         });
     } catch (error) {
-        logger.error('Error reading report directory:', { error: error.message });
+        logger.error('Error in flaky test detection:', { error: error.message });
     }
 }
 
