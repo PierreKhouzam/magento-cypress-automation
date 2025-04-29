@@ -6,20 +6,17 @@ module.exports = defineConfig({
     reportDir: 'cypress/reports',
     embeddedScreenshots: true,
     inlineAssets: true,
-    overwrite: true,
-    html: true,
-    json: true
+    overwrite: false,
+    html: false,
+    json: true,
+    saveJson: true,
+    jsonDir: 'cypress/reports/.jsons'
   },
-
   e2e: {
     setupNodeEvents(on, config) {
       require('cypress-mochawesome-reporter/plugin')(on);
     },
-
     baseUrl: 'https://magento.softwaretestingboard.com/',
-
-
-    // Adjust timeouts as needed
     pageLoadTimeout: 90000,
     defaultCommandTimeout: 10000,
   },
