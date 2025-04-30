@@ -23,7 +23,7 @@ This project covers major user flows including login, registration, product sear
 ### 1. Clone & Install
 
 ```bash
-git clone <https://github.com/PierreKhouzam/magento-cypress-automation.git>
+git clone https://github.com/PierreKhouzam/magento-cypress-automation.git
 cd magento-cypress-automation
 npm install
 ```
