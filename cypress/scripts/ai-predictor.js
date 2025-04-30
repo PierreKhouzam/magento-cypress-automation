@@ -239,7 +239,21 @@ async function updateTestHistoryWithRecommendations() {
             const hasIssues = features.timingIssues > 0 || features.selectorIssues > 0 || features.networkIssues > 0 || features.dataIssues > 0;
             if (predictionData.prediction === 'Flaky' || hasIssues) {
                 const issueType = determineIssueType(features);
-                history[testName].aiRecommendations = generateRecommendations(features, issueType);
+                const recommendations = generateRecommendations(features, issueType);
+                logger.info('Generated recommendations for test', {
+                    testName,
+                    prediction: predictionData.prediction,
+                    issueType,
+                    hasIssues,
+                    recommendationCount: recommendations.length
+                });
+                history[testName].aiRecommendations = recommendations;
+            } else {
+                logger.debug('No recommendations generated for test', {
+                    testName,
+                    prediction: predictionData.prediction,
+                    hasIssues
+                });
             }
         }
 

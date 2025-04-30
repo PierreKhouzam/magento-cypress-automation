@@ -60,9 +60,29 @@
         "state": "passed",
         "duration": 11321,
         "timestamp": "2025-04-29T13:48:09.872Z"
+      },
+      {
+        "state": "passed",
+        "duration": 18539,
+        "timestamp": "2025-04-29T23:13:12.369Z"
+      },
+      {
+        "state": "passed",
+        "duration": 14576,
+        "timestamp": "2025-04-29T23:47:08.875Z"
+      },
+      {
+        "state": "passed",
+        "duration": 15526,
+        "timestamp": "2025-04-29T23:51:50.302Z"
+      },
+      {
+        "state": "passed",
+        "duration": 12682,
+        "timestamp": "2025-04-29T23:56:07.462Z"
       }
     ],
-    "flakyScore": 0.02105027811772529,
+    "flakyScore": 0.030079022221500898,
     "patterns": {
       "timingIssues": 0,
       "selectorIssues": 0,
@@ -125,16 +145,41 @@
         "duration": 35941,
         "error": "Error: Mini cart did not update in time",
         "timestamp": "2025-04-29T13:48:09.872Z"
+      },
+      {
+        "state": "passed",
+        "duration": 49108,
+        "timestamp": "2025-04-29T23:13:12.369Z"
+      },
+      {
+        "state": "passed",
+        "duration": 45210,
+        "timestamp": "2025-04-29T23:47:08.875Z"
+      },
+      {
+        "state": "passed",
+        "duration": 48891,
+        "timestamp": "2025-04-29T23:51:50.302Z"
+      },
+      {
+        "state": "passed",
+        "duration": 52692,
+        "timestamp": "2025-04-29T23:56:07.462Z"
       }
     ],
-    "flakyScore": 0.2024338709920777,
+    "flakyScore": 0.1710697886264116,
     "patterns": {
       "timingIssues": 1,
       "selectorIssues": 0,
       "networkIssues": 0,
       "dataIssues": 0
     },
-    "aiRecommendations": []
+    "aiRecommendations": [
+      "Increase timeout for async operations",
+      "Add explicit waits for dynamic elements",
+      "Verify server response times",
+      "Stabilize test environment to reduce state changes"
+    ]
   },
   "Test Case C: Wishlist and Checkout Should add products to wishlist and checkout from wishlist": {
     "runs": [
@@ -162,16 +207,39 @@
         "state": "passed",
         "duration": 73292,
         "timestamp": "2025-04-29T13:48:09.872Z"
+      },
+      {
+        "state": "passed",
+        "duration": 66608,
+        "timestamp": "2025-04-29T23:13:12.369Z"
+      },
+      {
+        "state": "failed",
+        "duration": 29943,
+        "error": "SyntaxError: The following error originated from your application code, not from Cypress.\n\n  > Unexpected end of JSON input\n\nWhen Cypress detects uncaught errors originating from your application it will automatically fail the current test.\n\nThis behavior is configurable, and you can choose to turn this off by listening to the `uncaught:exception` event.\n\nhttps://on.cypress.io/uncaught-exception-from-application",
+        "timestamp": "2025-04-29T23:47:08.875Z"
+      },
+      {
+        "state": "passed",
+        "duration": 65094,
+        "timestamp": "2025-04-29T23:51:50.302Z"
+      },
+      {
+        "state": "passed",
+        "duration": 61130,
+        "timestamp": "2025-04-29T23:56:07.462Z"
       }
     ],
-    "flakyScore": 0.029523276695492342,
+    "flakyScore": 0.19020495825522918,
     "patterns": {
       "timingIssues": 0,
       "selectorIssues": 0,
       "networkIssues": 0,
       "dataIssues": 0
     },
-    "aiRecommendations": []
+    "aiRecommendations": [
+      "Stabilize test environment to reduce state changes"
+    ]
   },
   "Test Case D: Search and Validate Results Should search for a valid product and validate results, then search invalid and validate empty results": {
     "runs": [
@@ -199,15 +267,44 @@
         "state": "passed",
         "duration": 10992,
         "timestamp": "2025-04-29T13:48:09.872Z"
+      },
+      {
+        "state": "passed",
+        "duration": 21153,
+        "timestamp": "2025-04-29T23:13:12.369Z"
+      },
+      {
+        "state": "passed",
+        "duration": 17357,
+        "timestamp": "2025-04-29T23:47:08.875Z"
+      },
+      {
+        "state": "failed",
+        "duration": 20556,
+        "error": "CypressError: Timed out retrying after 10000ms: `cy.should()` failed because the page updated as a result of this command, but you tried to continue the command chain. The subject is no longer attached to the DOM, and Cypress cannot requery the page after commands such as `cy.should()`.\n\nCommon situations why this happens:\n  - Your JS framework re-rendered asynchronously\n  - Your app code reacted to an event firing and removed the element\n\nYou can typically solve this by breaking up a chain. For example, rewrite:\n\n> `cy.get('button').click().should('have.class', 'active')`\n\nto\n\n> `cy.get('button').as('btn').click()`\n> `cy.get('@btn').should('have.class', 'active')`\n\nhttps://on.cypress.io/element-has-detached-from-dom",
+        "timestamp": "2025-04-29T23:51:50.302Z"
+      },
+      {
+        "state": "passed",
+        "duration": 14687,
+        "timestamp": "2025-04-29T23:56:07.462Z"
       }
     ],
-    "flakyScore": 0.07882938501831213,
+    "flakyScore": 0.2116064601113088,
     "patterns": {
-      "timingIssues": 0,
-      "selectorIssues": 0,
+      "timingIssues": 1,
+      "selectorIssues": 1,
       "networkIssues": 0,
       "dataIssues": 0
     },
-    "aiRecommendations": []
+    "aiRecommendations": [
+      "Increase timeout for async operations",
+      "Add explicit waits for dynamic elements",
+      "Verify server response times",
+      "Review and update CSS selectors for stability",
+      "Use data-test attributes for reliable element targeting",
+      "Check for dynamic IDs or classes",
+      "Stabilize test environment to reduce state changes"
+    ]
   }
 }

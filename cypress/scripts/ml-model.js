@@ -5,10 +5,6 @@ const { loadTestHistory } = require('./test-db');
 const logger = require('./logger');
 const config = require('./config');
 
-/**
- * Machine learning model for flaky test prediction.
- * Uses a decision tree algorithm to classify tests as flaky or stable.
- */
 class FlakyTestPredictor {
     constructor(options = {}) {
         this.model = null;
@@ -82,7 +78,6 @@ class FlakyTestPredictor {
             const X = testResults.map(result => this._extractFeatureArray(result.features));
             const y = testResults.map(result => result.label);
 
-            // Validate X and y
             if (!X.every(row => Array.isArray(row) && row.length === this.featureNames.length && row.every(val => typeof val === 'number' && !isNaN(val)))) {
                 this.logger.error('Invalid feature data for training', { X });
                 throw new Error('Feature data must be a 2D array of numbers');
@@ -92,9 +87,8 @@ class FlakyTestPredictor {
                 throw new Error('Labels must be 0 or 1');
             }
 
-            // Log label distribution
             const flakyCount = y.filter(label => label === 1).length;
-            this.logger.debug('Training data', { samples: testResults.length, flakyCount, stableCount: testResults.length - flakyCount, X });
+            this.logger.debug('Training data', { samples: testResults.length, flakyCount, stableCount: testResults.length - flakyCount });
 
             this.model = new DecisionTreeClassifier(this.options);
             this.model.train(X, y);
@@ -107,9 +101,21 @@ class FlakyTestPredictor {
     }
 
     predict(features) {
+        if (!features) {
+            this.logger.warn('No features provided for prediction');
+            return this._ruleBasedPrediction(features);
+        }
+
+        // Always try rule-based prediction first for reliability
+        const ruleBasedResult = this._ruleBasedPrediction(features);
+        if (ruleBasedResult === 1) {
+            this.logger.debug('Rule-based prediction flagged as flaky', { features });
+            return 1; // Prioritize rule-based flakiness
+        }
+
         if (!this.model) {
             this.logger.warn('No trained model, using rule-based prediction');
-            return this._ruleBasedPrediction(features);
+            return ruleBasedResult;
         }
 
         try {
@@ -123,14 +129,25 @@ class FlakyTestPredictor {
             return this.model.predict([featureArray])[0];
         } catch (error) {
             this.logger.error('Error during prediction:', { error: error.message });
-            return this._ruleBasedPrediction(features);
+            return ruleBasedResult;
         }
     }
 
     getPredictionConfidence(features) {
+        if (!features) {
+            this.logger.warn('No features provided for confidence');
+            return 0.5;
+        }
+
+        const ruleBasedResult = this._ruleBasedPrediction(features);
+        if (ruleBasedResult === 1) {
+            // Higher confidence for rule-based flaky detection
+            return 0.9;
+        }
+
         if (!this.model) {
             this.logger.warn('No trained model, returning default confidence');
-            return 0.5;
+            return 0.6;
         }
 
         try {
@@ -140,11 +157,12 @@ class FlakyTestPredictor {
                 throw new Error('Feature data must be an array of numbers');
             }
 
+            // Fallback confidence based on prediction
             const prediction = this.model.predict([featureArray])[0];
-            return prediction === 1 ? 0.9 : 0.6; // Placeholder confidence
+            return prediction === 1 ? 0.8 : 0.6; // Simple confidence based on class
         } catch (error) {
             this.logger.error('Error getting prediction confidence:', { error: error.message });
-            return 0.5;
+            return 0.6;
         }
     }
 
@@ -164,17 +182,41 @@ class FlakyTestPredictor {
         const { flakyThreshold = 0.5, passRateThreshold = 0.85, transitionRateThreshold = 0.2, durationVariabilityThreshold = 0.5, recentFailRateThreshold = 0.3 } = config.flakiness || {};
         let flakyScore = 0;
 
-        if (features.passRate !== undefined && features.passRate <= passRateThreshold && features.passRate > 0.2) flakyScore += 0.4;
-        if (features.transitionRate !== undefined && features.transitionRate > transitionRateThreshold) flakyScore += 0.3;
-        if (features.durationVariability !== undefined && features.durationVariability > durationVariabilityThreshold) flakyScore += 0.2;
-        if (features.recentFailRate !== undefined && features.recentFailRate > recentFailRateThreshold) flakyScore += 0.3;
-        if (features.timingIssues > 0) flakyScore += 0.2;
-        if (features.selectorIssues > 0) flakyScore += 0.1;
-        if (features.networkIssues > 0) flakyScore += 0.1;
-        if (features.dataIssues > 0) flakyScore += 0.1;
+        if (features.passRate !== undefined && features.passRate <= passRateThreshold && features.passRate > 0.2) {
+            flakyScore += 0.4;
+            this.logger.debug('Added 0.4 to flakyScore for passRate', { passRate: features.passRate, passRateThreshold });
+        }
+        if (features.transitionRate !== undefined && features.transitionRate > transitionRateThreshold) {
+            flakyScore += 0.3;
+            this.logger.debug('Added 0.3 to flakyScore for transitionRate', { transitionRate: features.transitionRate, transitionRateThreshold });
+        }
+        if (features.durationVariability !== undefined && features.durationVariability > durationVariabilityThreshold) {
+            flakyScore += 0.2;
+            this.logger.debug('Added 0.2 to flakyScore for durationVariability', { durationVariability: features.durationVariability, durationVariabilityThreshold });
+        }
+        if (features.recentFailRate !== undefined && features.recentFailRate > recentFailRateThreshold) {
+            flakyScore += 0.3;
+            this.logger.debug('Added 0.3 to flakyScore for recentFailRate', { recentFailRate: features.recentFailRate, recentFailRateThreshold });
+        }
+        if (features.timingIssues > 0) {
+            flakyScore += 0.2;
+            this.logger.debug('Added 0.2 to flakyScore for timingIssues', { timingIssues: features.timingIssues });
+        }
+        if (features.selectorIssues > 0) {
+            flakyScore += 0.1;
+            this.logger.debug('Added 0.1 to flakyScore for selectorIssues', { selectorIssues: features.selectorIssues });
+        }
+        if (features.networkIssues > 0) {
+            flakyScore += 0.1;
+            this.logger.debug('Added 0.1 to flakyScore for networkIssues', { networkIssues: features.networkIssues });
+        }
+        if (features.dataIssues > 0) {
+            flakyScore += 0.1;
+            this.logger.debug('Added 0.1 to flakyScore for dataIssues', { dataIssues: features.dataIssues });
+        }
 
         this.logger.debug('Rule-based prediction', { features, flakyScore, threshold: flakyThreshold });
-        return flakyScore > flakyThreshold ? 1 : 0;
+        return flakyScore >= flakyThreshold ? 1 : 0;
     }
 
     async loadFromHistory() {
@@ -192,18 +234,17 @@ class FlakyTestPredictor {
             const testResults = Object.keys(history).map(testName => {
                 const testData = history[testName];
                 const features = require('./features').extractFeatures(testData);
-                // Lower threshold to increase flaky labels
                 const label = testData.flakyScore > (config.flakiness?.flakyScoreThreshold || 0.15) ? 1 : 0;
                 return { features, label };
             });
 
-            // Oversample flaky tests to balance dataset
+            // Oversample flaky tests
             const flakyResults = testResults.filter(r => r.label === 1);
             const stableResults = testResults.filter(r => r.label === 0);
             const balancedResults = [
                 ...testResults,
-                ...flakyResults, // Duplicate flaky tests
-                ...flakyResults.slice(0, Math.max(0, stableResults.length - flakyResults.length)) // Add more if needed
+                ...flakyResults,
+                ...flakyResults.slice(0, Math.max(0, stableResults.length - flakyResults.length))
             ];
 
             const success = this.train(balancedResults.length > 0 ? balancedResults : testResults);
@@ -217,32 +258,36 @@ class FlakyTestPredictor {
 
     getFeatureImportance() {
         if (!this.model || !this.model.root) {
-            this.logger.warn('No trained model, returning null feature importance');
-            return null;
+            this.logger.warn('No trained model, returning empty feature importance');
+            return this.featureNames.map(name => ({ feature: name, score: '0.00%' }));
         }
 
         const importance = {};
         this.featureNames.forEach(name => { importance[name] = 0; });
 
-        const calculateImportance = (node) => {
-            if (!node || !node.gain) return;
+        const calculateImportance = (node, depth = 0) => {
+            if (!node || node.isLeaf) return;
             if (node.feature !== undefined) {
                 const featureName = this.featureNames[node.feature];
-                if (featureName) importance[featureName] += node.gain || 0;
+                if (featureName) {
+                    importance[featureName] += node.gain || 1 / (depth + 1); // Use gain if available, else inverse depth
+                }
             }
-            if (node.left) calculateImportance(node.left);
-            if (node.right) calculateImportance(node.right);
+            if (node.left) calculateImportance(node.left, depth + 1);
+            if (node.right) calculateImportance(node.right, depth + 1);
         };
 
         calculateImportance(this.model.root);
         const total = Object.values(importance).reduce((sum, val) => sum + val, 0);
-        if (total > 0) {
-            Object.keys(importance).forEach(key => {
-                importance[key] = importance[key] / total;
-            });
-        }
+        const normalized = total > 0
+            ? Object.entries(importance).map(([feature, score]) => ({
+                feature,
+                score: `${(score / total * 100).toFixed(2)}%`
+            }))
+            : this.featureNames.map(name => ({ feature: name, score: '0.00%' }));
 
-        return importance;
+        this.logger.info('Feature importance calculated', { importance: normalized }); // Change to info for visibility
+        return normalized;
     }
 }
 

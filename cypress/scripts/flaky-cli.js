@@ -5,7 +5,7 @@ const { loadTestHistory } = require('./test-db');
 const logger = require('./logger');
 const { generateRecommendations } = require('./recommendations');
 const { detectFlakyTests } = require('./flaky-detector');
-const { analyzeFlakiness } = require('./ai-predictor');
+const { analyzeFlakiness, updateTestHistoryWithRecommendations } = require('./ai-predictor');
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -76,6 +76,8 @@ async function analyzeTests() {
         await detectFlakyTests();
         console.log('\nRunning AI-powered flakiness prediction...');
         await analyzeFlakiness();
+        console.log('\nGenerating and saving AI recommendations...');
+        await updateTestHistoryWithRecommendations(); // Add this call
     } catch (error) {
         logger.error('Error analyzing tests:', { error: error.message, stack: error.stack });
     }
@@ -164,6 +166,10 @@ async function generateRecommendationsCli() {
             });
         });
     }
+
+    // Persist recommendations to test-history.json
+    await updateTestHistoryWithRecommendations();
+    console.log('\nRecommendations saved to test history.');
 
     rl.question('\nPress Enter to return to the main menu...', () => {
         showMainMenu();

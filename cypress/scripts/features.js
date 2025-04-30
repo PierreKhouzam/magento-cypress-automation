@@ -6,7 +6,7 @@ const logger = require('./logger');
  * @returns {number} Pass rate (0 to 1)
  */
 function calculatePassRate(runs) {
-    if (!runs || runs.length === 0) return 0;
+    if (!Array.isArray(runs) || runs.length === 0) return 0;
     return runs.filter(run => run.state === 'passed').length / runs.length;
 }
 
@@ -16,7 +16,7 @@ function calculatePassRate(runs) {
  * @returns {number} Transition rate (0 to 1)
  */
 function calculateTransitionRate(runs) {
-    if (!runs || runs.length <= 1) return 0;
+    if (!Array.isArray(runs) || runs.length <= 1) return 0;
     let transitions = 0;
     for (let i = 1; i < runs.length; i++) {
         if (runs[i].state !== runs[i - 1].state) transitions++;
@@ -30,7 +30,7 @@ function calculateTransitionRate(runs) {
  * @returns {number} Coefficient of variation
  */
 function calculateDurationVariability(runs) {
-    if (!runs || runs.length < 2) return 0;
+    if (!Array.isArray(runs) || runs.length < 2) return 0;
     const durations = runs.map(run => run.duration || 0).filter(d => d > 0);
     if (durations.length < 2) return 0;
     const avgDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
@@ -47,7 +47,7 @@ function calculateDurationVariability(runs) {
  * @returns {number} Recent fail rate (0 to 1)
  */
 function calculateRecentFailRate(runs, recentCount = 5) {
-    if (!runs || runs.length === 0) return 0;
+    if (!Array.isArray(runs) || runs.length === 0) return 0;
     const recentRuns = runs.slice(-Math.min(recentCount, runs.length));
     const recentFails = recentRuns.filter(run => run.state === 'failed').length;
     return recentFails / recentRuns.length;
@@ -59,15 +59,36 @@ function calculateRecentFailRate(runs, recentCount = 5) {
  * @returns {Object} Feature object
  */
 function extractFeatures(testData) {
-    const runs = testData.runs || [];
+    if (!testData || !Array.isArray(testData.runs)) {
+        logger.warn('Invalid testData or missing runs', { testData });
+        return {
+            passRate: 0,
+            avgDuration: 0,
+            transitionRate: 0,
+            timingIssues: 0,
+            selectorIssues: 0,
+            networkIssues: 0,
+            dataIssues: 0,
+            durationVariability: 0,
+            recentFailRate: 0
+        };
+    }
+
+    const runs = testData.runs;
     let timingIssues = 0;
     let selectorIssues = 0;
     let networkIssues = 0;
     let dataIssues = 0;
 
-    runs.forEach(run => {
-        if (run.error) {
-            const errorMsg = run.error.toLowerCase();
+    runs.forEach((run, index) => {
+        let errorMsg = '';
+        if (run.err?.message) {
+            errorMsg = run.err.message.toLowerCase();
+        } else if (run.error && typeof run.error === 'string') {
+            errorMsg = run.error.toLowerCase();
+        }
+
+        if (errorMsg) {
             if (errorMsg.includes('time') || errorMsg.includes('timeout') || errorMsg.includes('wait')) {
                 timingIssues++;
             }
@@ -96,8 +117,9 @@ function extractFeatures(testData) {
     };
 
     logger.debug('Extracted features for test', {
-        test: runs[0]?.title || testData.title || 'unknown',
-        features
+        testTitle: runs[0]?.title || testData.title || 'unknown',
+        features,
+        runs: runs.map(r => ({ state: r.state, err: r.err?.message || r.error || null }))
     });
 
     return features;
