@@ -23,7 +23,7 @@ describe.only('Test Case A: Registration flow with login validation', () => {
         RegistrationPage.validateRegistrationSuccess();
     });
 
-    it('Should allow user to log in with registered credentials', () => {
+    it.only('Should allow user to log in with registered credentials', () => {
         // Step 1: Visit the login page
         LoginPage.visit();
 

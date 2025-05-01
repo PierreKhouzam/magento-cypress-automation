@@ -80,9 +80,24 @@
         "state": "passed",
         "duration": 12682,
         "timestamp": "2025-04-29T23:56:07.462Z"
+      },
+      {
+        "state": "passed",
+        "duration": 11176,
+        "timestamp": "2025-05-01T15:15:06.283Z"
+      },
+      {
+        "state": "passed",
+        "duration": 39739,
+        "timestamp": "2025-05-01T15:41:16.694Z"
+      },
+      {
+        "state": "passed",
+        "duration": 15177,
+        "timestamp": "2025-05-01T15:50:26.959Z"
       }
     ],
-    "flakyScore": 0.030079022221500898,
+    "flakyScore": 0.08548085888889617,
     "patterns": {
       "timingIssues": 0,
       "selectorIssues": 0,
@@ -107,9 +122,19 @@
         "state": "passed",
         "duration": 5715,
         "timestamp": "2025-04-25T10:24:50.445Z"
+      },
+      {
+        "state": "passed",
+        "duration": 7661,
+        "timestamp": "2025-05-01T15:41:16.694Z"
+      },
+      {
+        "state": "passed",
+        "duration": 6312,
+        "timestamp": "2025-05-01T15:50:26.959Z"
       }
     ],
-    "flakyScore": 0.004447520777950744,
+    "flakyScore": 0.023657470449293803,
     "patterns": {
       "timingIssues": 0,
       "selectorIssues": 0,
@@ -165,9 +190,19 @@
         "state": "passed",
         "duration": 52692,
         "timestamp": "2025-04-29T23:56:07.462Z"
+      },
+      {
+        "state": "passed",
+        "duration": 48346,
+        "timestamp": "2025-05-01T15:15:06.283Z"
+      },
+      {
+        "state": "passed",
+        "duration": 53955,
+        "timestamp": "2025-05-01T15:50:26.959Z"
       }
     ],
-    "flakyScore": 0.1710697886264116,
+    "flakyScore": 0.10930310794345208,
     "patterns": {
       "timingIssues": 1,
       "selectorIssues": 0,
@@ -177,8 +212,7 @@
     "aiRecommendations": [
       "Increase timeout for async operations",
       "Add explicit waits for dynamic elements",
-      "Verify server response times",
-      "Stabilize test environment to reduce state changes"
+      "Verify server response times"
     ]
   },
   "Test Case C: Wishlist and Checkout Should add products to wishlist and checkout from wishlist": {
@@ -228,17 +262,36 @@
         "state": "passed",
         "duration": 61130,
         "timestamp": "2025-04-29T23:56:07.462Z"
+      },
+      {
+        "state": "passed",
+        "duration": 54247,
+        "timestamp": "2025-05-01T15:15:06.283Z"
+      },
+      {
+        "state": "failed",
+        "duration": 48387,
+        "error": "AssertionError: Timed out retrying after 10000ms: expected '[ <span.counter.qty>, 4 more... ]' to be 'visible'\n\nThis element `[ <span.counter.qty>, 4 more... ]` is not visible because its parent `<div.customer-menu>` has CSS property: `display: none`",
+        "timestamp": "2025-05-01T15:50:26.959Z"
       }
     ],
-    "flakyScore": 0.19020495825522918,
+    "flakyScore": 0.2640337505251672,
     "patterns": {
-      "timingIssues": 0,
-      "selectorIssues": 0,
+      "timingIssues": 1,
+      "selectorIssues": 1,
       "networkIssues": 0,
       "dataIssues": 0
     },
     "aiRecommendations": [
-      "Stabilize test environment to reduce state changes"
+      "Increase timeout for async operations",
+      "Add explicit waits for dynamic elements",
+      "Verify server response times",
+      "Review and update CSS selectors for stability",
+      "Use data-test attributes for reliable element targeting",
+      "Check for dynamic IDs or classes",
+      "Investigate inconsistent test failures",
+      "Stabilize test environment to reduce state changes",
+      "Prioritize debugging recent test failures"
     ]
   },
   "Test Case D: Search and Validate Results Should search for a valid product and validate results, then search invalid and validate empty results": {
@@ -288,9 +341,19 @@
         "state": "passed",
         "duration": 14687,
         "timestamp": "2025-04-29T23:56:07.462Z"
+      },
+      {
+        "state": "passed",
+        "duration": 11026,
+        "timestamp": "2025-05-01T15:15:06.283Z"
+      },
+      {
+        "state": "passed",
+        "duration": 17796,
+        "timestamp": "2025-05-01T15:50:26.959Z"
       }
     ],
-    "flakyScore": 0.2116064601113088,
+    "flakyScore": 0.18865647460440607,
     "patterns": {
       "timingIssues": 1,
       "selectorIssues": 1,
@@ -303,8 +366,7 @@
       "Verify server response times",
       "Review and update CSS selectors for stability",
       "Use data-test attributes for reliable element targeting",
-      "Check for dynamic IDs or classes",
-      "Stabilize test environment to reduce state changes"
+      "Check for dynamic IDs or classes"
     ]
   }
 }

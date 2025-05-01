@@ -5,6 +5,7 @@ const logger = require('./logger');
 const { extractFeatures } = require('./features');
 const { saveTestHistory } = require('./test-db');
 const { generateHtmlReport } = require('./utils');
+const { updateTestHistoryWithRecommendations } = require('./ai-predictor');
 
 async function extractTestResults(jsonReport, fileName, fileMtime) {
     try {
@@ -87,7 +88,7 @@ async function extractTestResults(jsonReport, fileName, fileMtime) {
         logger.info(`Completed extracting test results from ${fileName}`, { testCount: results.length });
         return results;
     } catch (error) {
-        logger.error(`Error parsing JSON report ${fileName}:`, { error: error.message });
+        logger.error(`Error parsing JSON report ${fileName}:`, { error: error.message, stack: error.stack });
         return [];
     }
 }
@@ -101,19 +102,20 @@ async function detectFlakyTests() {
     try {
         logger.info(`Verifying report directory: ${reportDir}`);
         await fs.access(reportDir).catch((err) => {
-            logger.error(`Report directory does not exist or is inaccessible: ${reportDir}`, { error: err.message });
-            throw err;
+            logger.error(`Report directory does not exist or is inaccessible: ${reportDir}`, { error: err.message, stack: err.stack });
+            throw new Error(`Report directory inaccessible: ${err.message}`);
         });
+
         logger.info(`Scanning report directory: ${reportDir}`);
         const files = await fs.readdir(reportDir).catch((err) => {
-            logger.error(`Failed to read report directory ${reportDir}:`, { error: err.message });
-            return [];
+            logger.error(`Failed to read report directory ${reportDir}:`, { error: err.message, stack: err.stack });
+            throw new Error(`Failed to read directory: ${err.message}`);
         });
         logger.info(`Found files in directory: ${files.join(', ')}`);
         const jsonFiles = files.filter((file) => file.match(/^index(_\d{3})?\.json$/));
 
         if (jsonFiles.length === 0) {
-            logger.info('No test report files found matching index*.json.');
+            logger.warn('No test report files found matching index*.json.');
             return;
         }
 
@@ -134,7 +136,7 @@ async function detectFlakyTests() {
                     testResults.push({ ...result, fileMtime });
                 });
             } catch (err) {
-                logger.error(`Error processing file ${file}:`, { error: err.message });
+                logger.error(`Error processing file ${file}:`, { error: err.message, stack: err.stack });
             }
         }
 
@@ -185,15 +187,64 @@ async function detectFlakyTests() {
                 dataIssues: features.dataIssues,
             };
         });
+        // Update test history with recommendations
+        logger.info('Updating test history with AI recommendations...');
+        let testHistoryUpdated;
+        try {
+            await updateTestHistoryWithRecommendations();
+            // Read the updated test-history.json directly
+            const historyPath = path.join(config.db.dir, 'test-history.json');
+            let attempts = 3;
+            while (attempts > 0) {
+                try {
+                    const historyData = await fs.readFile(historyPath, 'utf8');
+                    testHistoryUpdated = JSON.parse(historyData);
+                    // Validate testHistoryUpdated
+                    if (!testHistoryUpdated || typeof testHistoryUpdated !== 'object' || Object.keys(testHistoryUpdated).length === 0) {
+                        throw new Error('Invalid or empty test history data');
+                    }
+                    logger.info('Test history loaded successfully', {
+                        testCount: Object.keys(testHistoryUpdated).length,
+                        recommendations: Object.values(testHistoryUpdated).map(t => t.aiRecommendations?.length || 0),
+                        recommendationDetails: Object.fromEntries(
+                            Object.entries(testHistoryUpdated).map(([name, data]) => [name, data.aiRecommendations || []])
+                        )
+                    });
+                    break;
+                } catch (error) {
+                    attempts--;
+                    if (attempts === 0) {
+                        logger.error('Failed to read or parse test history after retries:', { error: error.message, stack: error.stack });
+                        throw new Error(`Failed to read or parse test history: ${error.message}`);
+                    }
+                    logger.warn(`Retrying read of test-history.json (${attempts} attempts left)...`);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+            logger.info('Successfully updated and loaded test history with recommendations');
+        } catch (error) {
+            logger.error('Failed to update or load test history with recommendations:', { error: error.message, stack: error.stack });
+            throw new Error(`Failed to update or load recommendations: ${error.message}`);
+        }
 
-        await saveTestHistory(testHistory);
-        await generateHtmlReport(testHistory);
+        // Generate HTML report
+        logger.info('Generating HTML report...');
+        try {
+            await generateHtmlReport(testHistoryUpdated);
+            logger.info('HTML report generated successfully');
+        } catch (error) {
+            logger.error('Failed to generate HTML report:', { error: error.message, stack: error.stack });
+            throw new Error(`Failed to generate HTML report: ${error.message}`);
+        }
+
         logger.info('Flaky test detection completed.', {
             testsProcessed: testResults.length,
-            uniqueTests: Object.keys(testHistory).length,
+            uniqueTests: Object.keys(testHistoryUpdated).length,
         });
+
     } catch (error) {
-        logger.error('Error in flaky test detection:', { error: error.message });
+        logger.error('Error in flaky test detection:', { error: error.message, stack: error.stack });
+        throw error;
     }
 }
 
@@ -205,12 +256,15 @@ function calculateFlakyScore(features) {
         recentFailRate: 0.2,
     };
 
-    return (
+    const score = (
         weights.passRate * (1 - features.passRate) +
         weights.transitionRate * features.transitionRate +
         weights.durationVariability * features.durationVariability +
         weights.recentFailRate * features.recentFailRate
     );
+
+    logger.debug('Calculated flaky score', { features, score });
+    return score;
 }
 
 module.exports = { detectFlakyTests, extractTestResults };
